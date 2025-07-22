@@ -1,0 +1,7 @@
+======================================================
+------------------------TODO-------------------------
+need to add a global exception handler(
+ - IllegalStateException for when user is unauthorized
+)
+
+make sure to change every controller that gets the user from auth to get it from the provider

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Owner Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+
+<body class="bg-light">
+<div th:replace="~{fragments/navbar :: navBar}"></div>
+
+<div class="container mt-4">
+  <!-- Welcome Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm bg-primary">
+        <div class="card-body py-4 text-white">
+          <div class="d-flex align-items-center">
+            <div class="bg-white bg-opacity-25 rounded-circle p-3 me-3">
+              <i class="bi bi-building fs-1 text-white"></i>
+            </div>
+            <div>
+              <h1 class="mb-0 fw-bold">WELCOME! <span th:text="${user.firstName}">User</span></h1>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            <button type="button" class="btn btn-outline-light btn-lg" data-bs-toggle="modal" data-bs-target="#createApartmentModal">
+              <i class="bi bi-plus-circle me-2"></i>
+              Create New Apartment
+            </button>
+            <button type="button" class="btn btn-outline-light btn-lg" data-bs-toggle="modal" data-bs-target="#joinApartmentModal">
+              <i class="bi bi-door-open me-2"></i>
+              Join Apartment
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Owned Apartments -->
+  <div th:if="${ownedApartments != null}" class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pb-0">
+          <h4 class="card-title mb-0 d-flex align-items-center">
+            <i class="bi bi-buildings me-2 text-primary"></i>
+            Here is a summary of all your owned apartments:
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div th:each="apt : ${ownedApartments}" class="col-lg-6 mb-4">
+              <div class="card h-100 border-0 shadow-sm property-card">
+                <div class="card-header bg-gradient-light border-0">
+                  <h5 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-house-door me-2 text-success"></i>
+                    <span th:text="${apt.getAddress()}">Apartment Name</span>
+                  </h5>
+                </div>
+
+                <div class="card-body">
+                  <!-- Reference Code -->
+                  <div class="mb-3">
+                    <span class="text-muted">Apartment reference code: </span>
+                    <strong th:text="${apt.getReferenceCode()}">REF123</strong>
+                  </div>
+
+                  <!-- Tenants List -->
+                  <div th:if="${apt.getTenants() != null && apt.getTenants().size() > 0}">
+                    <div class="d-flex flex-wrap gap-2">
+                        <span th:each="resident : ${apt.getTenants()}"
+                              class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill">
+                          <i class="bi bi-person me-1"></i>
+                          <span th:text="${resident.firstName} + ' ' + ${resident.lastName}">Resident Name</span>
+                        </span>
+                    </div>
+                  </div>
+
+                  <div th:if="${apt.getTenants() == null || apt.getTenants().size() == 0}" class="text-center py-3">
+                    <i class="bi bi-house text-muted"></i>
+                    <p class="text-muted mb-0 mt-2 small">No current tenants</p>
+                  </div>
+                </div>
+
+                <!-- Leave Button -->
+                <div class="card-footer bg-white border-0 pt-0">
+                  <form th:action="@{/apartment/leave}" method="post" class="d-grid" th:id="'leaveForm-' + ${apt.getId()}">
+                    <input type="hidden" name="apartmentId" th:value="${apt.getId()}">
+                    <button type="button" class="btn btn-outline-danger btn-sm"
+                            data-bs-toggle="modal"
+                            th:data-bs-target="'#leaveModal-' + ${apt.getId()}">
+                      <i class="bi bi-box-arrow-left me-2"></i>
+                      Leave Apartment
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <!-- Leave Confirmation Modal -->
+              <div class="modal fade" th:id="'leaveModal-' + ${apt.getId()}" tabindex="-1" aria-labelledby="leaveModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content border-0 shadow">
+                    <div class="modal-header border-0 pb-0">
+                      <h5 class="modal-title fw-bold text-danger" id="leaveModalLabel">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Leave Apartment
+                      </h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body pt-0">
+                      <p class="text-muted mb-1">Are you sure you want to leave:</p>
+                      <p class="fw-semibold mb-3" th:text="${apt.getAddress()}">Apartment Address</p>
+                      <div class="alert alert-warning border-0 bg-warning bg-opacity-10">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>This action cannot be undone. You will lose access to this apartment.</small>
+                      </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>
+                        Cancel
+                      </button>
+                      <button type="button" class="btn btn-danger" th:onclick="'document.getElementById(\'leaveForm-' + ${apt.getId()} + '\').submit();'">
+                        <i class="bi bi-box-arrow-left me-2"></i>
+                        Leave Apartment
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div th:replace="~{fragments/modal-fragments :: createApartmentModal}"></div>
+<div th:replace="~{fragments/modal-fragments :: joinApartmentModal}"></div>
+
+<style>
+  .property-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+
+  .property-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12) !important;
+  }
+
+  .card {
+    border-radius: 12px;
+  }
+
+  .badge {
+    font-size: 0.875rem;
+  }
+
+  .bg-gradient-light {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
+</body>
+</html>

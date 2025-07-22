@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Registration Form</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container">
+    <div class="row min-vh-100 justify-content-center align-items-center py-5">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4">
+                <div class="card-body p-5">
+                    <!-- Header -->
+                    <div class="text-center mb-4">
+                        <div class="mb-3">
+                            <i class="bi bi-person-plus display-4 text-primary"></i>
+                        </div>
+                        <h3 class="fw-bold text-primary mb-0">Register</h3>
+                    </div>
+
+                    <!-- Registration Form -->
+                    <form th:action="@{/register}" th:object="${user}" method="post">
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-semibold">Email</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 rounded-start-pill">
+                                    <i class="bi bi-envelope text-muted"></i>
+                                </span>
+                                <input type="email"
+                                       th:field="*{email}"
+                                       class="form-control bg-light border-start-0 rounded-end-pill"
+                                       id="email"
+                                       placeholder="Enter your email"
+                                       required>
+                            </div>
+                            <div class="text-danger mt-1 small" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                        </div>
+
+                        <!-- First Name -->
+                        <div class="mb-3">
+                            <label for="firstname" class="form-label fw-semibold">First Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 rounded-start-pill">
+                                    <i class="bi bi-person text-muted"></i>
+                                </span>
+                                <input type="text"
+                                       th:field="*{firstName}"
+                                       class="form-control bg-light border-start-0 rounded-end-pill"
+                                       id="firstname"
+                                       placeholder="Enter your first name"
+                                       required>
+                            </div>
+                            <div class="text-danger mt-1 small" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>
+                        </div>
+
+                        <!-- Last Name -->
+                        <div class="mb-3">
+                            <label for="lastname" class="form-label fw-semibold">Last Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 rounded-start-pill">
+                                    <i class="bi bi-person text-muted"></i>
+                                </span>
+                                <input type="text"
+                                       th:field="*{lastName}"
+                                       class="form-control bg-light border-start-0 rounded-end-pill"
+                                       id="lastname"
+                                       placeholder="Enter your last name"
+                                       required>
+                            </div>
+                            <div class="text-danger mt-1 small" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label fw-semibold">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 rounded-start-pill">
+                                    <i class="bi bi-lock text-muted"></i>
+                                </span>
+                                <input type="password"
+                                       th:field="*{password}"
+                                       class="form-control bg-light border-start-0 rounded-end-pill"
+                                       id="password"
+                                       placeholder="Enter your password"
+                                       required>
+                            </div>
+                            <div class="text-danger mt-1 small" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                        </div>
+
+                        <!-- Role -->
+                        <div class="mb-3">
+                            <label for="role" class="form-label fw-semibold">Role</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 rounded-start-pill">
+                                    <i class="bi bi-shield-check text-muted"></i>
+                                </span>
+                                <select th:field="*{role}"
+                                        class="form-select bg-light border-start-0 rounded-end-pill"
+                                        id="role"
+                                        required>
+                                    <option value="" disabled selected>Select Role</option>
+                                    <option th:each="r : ${roles}" th:value="${r}" th:text="${r.getDisplayName()}"></option>
+                                </select>
+                            </div>
+                            <div class="text-danger mt-1 small" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></div>
+                        </div>
+
+                        <!-- Apartment Reference Code -->
+                        <div class="mb-4">
+                            <label for="apartmentReferenceCode" class="form-label fw-semibold">Reference Code</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 rounded-start-pill">
+                                    <i class="bi bi-key text-muted"></i>
+                                </span>
+                                <input type="text"
+                                       th:field="*{apartmentReferenceCode}"
+                                       class="form-control bg-light border-start-0 rounded-end-pill"
+                                       id="apartmentReferenceCode"
+                                       placeholder="Enter apartment reference code (optional)">
+                            </div>
+                            <div class="text-danger mt-1 small" th:if="${#fields.hasErrors('apartmentReferenceCode')}" th:errors="*{apartmentReferenceCode}"></div>
+                        </div>
+
+                        <div class="d-grid mb-4">
+                            <button type="submit" class="btn btn-primary btn-lg py-3 rounded-pill fw-semibold">
+                                <i class="bi bi-person-plus me-2"></i>
+                                Register
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="mb-3 text-muted">Already have an account?</p>
+                        <div class="d-grid mb-3">
+                            <a href="/login" class="btn btn-outline-primary py-2 rounded-pill">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>
+                                Login here
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <a href="/" class="text-muted text-decoration-none">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
+</body>
+</html>

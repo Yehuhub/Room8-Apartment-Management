@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Chore Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+</head>
+<body class="bg-light">
+<!-- Navigation -->
+<div th:replace="~{fragments/navbar :: navBar}"></div>
+
+<!-- Main Container -->
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5 fw-bold text-primary mb-1">
+                        <i class="bi bi-list-check me-2"></i>Chore Management
+                    </h1>
+                    <p class="text-muted mb-0">Organize and track your household tasks</p>
+                </div>
+                <div class="d-none d-md-block">
+                    <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#choreModal">
+                        <i class="bi bi-plus-circle me-2"></i>Add New Chore
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-funnel me-2"></i>Filters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6 col-lg-4">
+                            <label for="userSelect" class="form-label fw-semibold">
+                                <i class="bi bi-person me-1"></i>Filter by User
+                            </label>
+                            <select id="userSelect" name="userId" class="form-select">
+                                <option value="">All Users</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <label for="periodSelect" class="form-label fw-semibold">
+                                <i class="bi bi-calendar-range me-1"></i>Filter by Period
+                            </label>
+                            <select id="periodSelect" name="period" class="form-select">
+                                <option value="WEEK" selected>This Week</option>
+                                <option value="MONTH">This Month</option>
+                                <option value="UPCOMING">Upcoming</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-4 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Clear Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Info -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div id="filter-info"></div>
+        </div>
+    </div>
+
+    <!-- Chores List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clipboard-check me-2"></i>Your Chores
+                    </h5>
+                    <div class="d-md-none">
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#choreModal">
+                            <i class="bi bi-plus-circle me-1"></i>Add
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="chores-list" class="table-responsive">
+                        <!-- Chores will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div th:replace="~{fragments/modal-fragments :: choreModal}"></div>
+<div th:replace="~{fragments/modal-fragments :: editChoreModal}"></div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to delete this chore? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="bi bi-trash me-2"></i>Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+<!-- Scripts -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        populateUsersFilter();
+        populateChoresList();
+
+        // Add event listeners for filter changes
+        document.getElementById("userSelect").addEventListener("change", populateChoresList);
+        document.getElementById("periodSelect").addEventListener("change", populateChoresList);
+    });
+
+    const populateUsersFilter = async () => {
+        const usersData = await fetchUsers();
+        const userSelect = document.getElementById("userSelect");
+        userSelect.innerHTML = "";
+        const all = document.createElement("option");
+        all.value = "";
+        all.text = "All Users";
+        userSelect.append(all);
+
+        usersData.forEach(user => {
+            const option = document.createElement("option");
+            option.value = user.id;
+            option.text = user.nameRepresentation;
+            userSelect.append(option);
+        });
+    };
+
+    const fetchUsers = async () => {
+        const URL = "/api/chores/users";
+        try {
+            const response = await fetch(URL);
+            if (!response.ok) {
+                throw new Error(response.statusText);
+            }
+            return await response.json();
+        } catch (e) {
+            showToast('Failed to fetch users. Please try again.', 'error');
+            return [];
+        }
+    };
+
+    const fetchChores = async (userId = '', period = 'WEEK') => {
+        let URL = "/api/chores";
+        const params = new URLSearchParams();
+
+        if (userId) {
+            params.append('userId', userId);
+        }
+
+        if (period) {
+            params.append('period', period);
+        }
+
+        const queryString = params.toString();
+        if (queryString) {
+            URL += '?' + queryString;
+        }
+
+        try {
+            const response = await fetch(URL);
+            if (!response.ok) {
+                throw new Error(response.statusText);
+            }
+            return await response.json();
+        } catch (e) {
+            showToast('Failed to fetch chores. Please try again.', 'error');
+            return [];
+        }
+    };
+
+    const populateChoresList = async () => {
+        const userFilter = document.getElementById("userSelect").value;
+        const periodFilter = document.getElementById("periodSelect").value;
+
+        // Show loading state
+        const filterInfo = document.getElementById("filter-info");
+        filterInfo.innerHTML = '<div class="alert alert-info border-0"><i class="bi bi-hourglass me-2"></i>Loading chores...</div>';
+
+        const allChores = await fetchChores(userFilter, periodFilter);
+
+        // Update filter info
+        const userText = userFilter ? document.getElementById("userSelect").options[document.getElementById("userSelect").selectedIndex].text : "All Users";
+        const periodText = document.getElementById("periodSelect").options[document.getElementById("periodSelect").selectedIndex].text;
+
+        filterInfo.innerHTML = `<div class="alert alert-info border-0"><i class="bi bi-info-circle me-2"></i>Showing chores for: <strong>${userText}</strong>, Period: <strong>${periodText}</strong></div>`;
+
+        const choresList = document.getElementById("chores-list");
+        choresList.innerHTML = "";
+
+        if (allChores.length === 0) {
+            choresList.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="bi bi-clipboard-x display-1 text-muted mb-3"></i>
+                        <h4 class="text-muted">No chores found</h4>
+                        <p class="text-muted">Try adjusting your filters or add a new chore to get started.</p>
+                    </div>
+                `;
+            return;
+        }
+
+        const choresTable = document.createElement("table");
+        choresTable.classList.add("table", "table-hover", "mb-0");
+        choresList.append(choresTable);
+
+        const thead = document.createElement("thead");
+        thead.classList.add("table-light");
+        thead.innerHTML = `
+                <tr>
+                    <th class="border-0 py-3"><i class="bi bi-card-text me-2"></i>Chore Name</th>
+                    <th class="border-0 py-3 d-none d-md-table-cell"><i class="bi bi-file-text me-2"></i>Description</th>
+                    <th class="border-0 py-3"><i class="bi bi-calendar-date me-2"></i>Date</th>
+                    <th class="border-0 py-3 d-none d-sm-table-cell"><i class="bi bi-person me-2"></i>Assigned To</th>
+                    <th class="border-0 py-3"><i class="bi bi-flag me-2"></i>Status</th>
+                    <th class="border-0 py-3 text-center"><i class="bi bi-gear me-2"></i>Actions</th>
+                </tr>
+            `;
+
+        const tbody = document.createElement("tbody");
+
+        allChores.forEach(chore => {
+            const tr = document.createElement("tr");
+            tr.setAttribute('data-chore-id', chore.id);
+
+            const statusClass = chore.status === 'COMPLETED' ? 'success' :
+                chore.status === 'PENDING' ? 'secondary' : 'warning';
+
+            tr.innerHTML = `
+                    <td class="py-3">
+                        <div class="fw-semibold">${chore.name}</div>
+                        <div class="small text-muted d-md-none">${chore.description || 'No description'}</div>
+                    </td>
+                    <td class="py-3 d-none d-md-table-cell">${chore.description || '<span class="text-muted">No description</span>'}</td>
+                    <td class="py-3">
+                        <div class="fw-semibold">${chore.scheduledDate}</div>
+                        <div class="small text-muted d-sm-none">${chore.assignedToName}</div>
+                    </td>
+                    <td class="py-3 d-none d-sm-table-cell">${chore.assignedToName}</td>
+                    <td class="py-3">
+                        <span class="badge bg-${statusClass} fs-6">${chore.status}</span>
+                    </td>
+                    <td class="py-3 text-center">
+                        <div class="btn-group" role="group">
+                        </div>
+                    </td>
+                `;
+
+            const btnGroup = tr.querySelector('.btn-group');
+
+            if (chore.status !== "COMPLETED") {
+                const completeButton = document.createElement("button");
+                completeButton.type = "button";
+                completeButton.innerHTML = '<i class="bi bi-check-circle"></i>';
+                completeButton.classList.add("btn", "btn-outline-success", "btn-sm");
+                completeButton.title = "Mark as completed";
+                completeButton.addEventListener("click", () => {
+                    completeChore(chore.id);
+                });
+
+                const editButton = document.createElement("button");
+                editButton.type = "button";
+                editButton.innerHTML = '<i class="bi bi-pencil-square"></i>';
+                editButton.classList.add("btn", "btn-outline-primary", "btn-sm");
+                editButton.title = "Edit chore";
+                editButton.addEventListener("click", () => {
+                    editChore(chore);
+                });
+
+                btnGroup.appendChild(completeButton);
+                btnGroup.appendChild(editButton);
+            }
+
+            const deleteButton = document.createElement("button");
+            deleteButton.type = "button";
+            deleteButton.innerHTML = '<i class="bi bi-trash"></i>';
+            deleteButton.classList.add("btn", "btn-outline-danger", "btn-sm");
+            deleteButton.title = "Delete chore";
+            deleteButton.addEventListener("click", () => {
+                const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+                document.getElementById('confirmDeleteBtn').onclick = () => {
+                    deleteChore(chore.id);
+                    modal.hide();
+                };
+                modal.show();
+            });
+
+            btnGroup.appendChild(deleteButton);
+            tbody.append(tr);
+        });
+
+        choresTable.append(thead, tbody);
+    };
+
+    function clearFilters() {
+        document.getElementById("userSelect").value = "";
+        document.getElementById("periodSelect").value = "WEEK";
+        populateChoresList();
+    }
+
+    async function completeChore(choreId) {
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+        const row = document.querySelector(`tr[data-chore-id="${choreId}"]`);
+        const completeBtn = row.querySelector('.btn-outline-success');
+        const statusBadge = row.querySelector('.badge');
+
+        completeBtn.disabled = true;
+        completeBtn.innerHTML = '<i class="bi bi-hourglass"></i>';
+
+        try {
+            const response = await fetch(`/api/chores/${choreId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [csrfHeader]: csrfToken
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to complete chore');
+            }
+            statusBadge.className = 'badge bg-success fs-6';
+            statusBadge.textContent = 'COMPLETED';
+
+            // Remove complete and edit buttons
+            const btnGroup = row.querySelector('.btn-group');
+            const editBtn = btnGroup.querySelector('.btn-outline-primary');
+            if (editBtn) editBtn.remove();
+            completeBtn.remove();
+
+            showToast('Chore completed successfully', 'success');
+
+        } catch (error) {
+            completeBtn.disabled = false;
+            completeBtn.innerHTML = '<i class="bi bi-check-circle"></i>';
+            showToast('Failed to complete chore. Please try again.', 'error');
+        }
+    }
+
+    async function deleteChore(choreId) {
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        const row = document.querySelector(`tr[data-chore-id="${choreId}"]`);
+
+        // Show loading state
+        const deleteBtn = row.querySelector('.btn-outline-danger');
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<i class="bi bi-hourglass"></i>';
+
+        try {
+            const response = await fetch(`/api/chores/${choreId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [csrfHeader]: csrfToken
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Delete failed');
+            }
+
+            row.remove();
+            showToast('Chore deleted successfully', 'success');
+
+        } catch (error) {
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+            showToast('Failed to delete chore. Please try again.', 'error');
+        }
+    }
+
+    function editChore(chore) {
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+        // Populate the edit modal with the chore's data
+        document.getElementById('editChoreName').value = chore.name;
+        document.getElementById('editChoreDescription').value = chore.description || '';
+        document.getElementById('editChoreScheduledDate').value = chore.scheduledDate;
+        document.getElementById('editChoreId').value = chore.id;
+
+        // Set minimum date to today to prevent selecting past dates
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('editChoreScheduledDate').min = today;
+
+        // Show the modal
+        const editModal = new bootstrap.Modal(document.getElementById('editChoreModal'));
+        editModal.show();
+
+        // Set up the save button click handler
+        document.getElementById('saveChoreBtn').onclick = async function() {
+            const name = document.getElementById('editChoreName').value;
+            const description = document.getElementById('editChoreDescription').value;
+            const scheduledDate = document.getElementById('editChoreScheduledDate').value;
+            const choreId = document.getElementById('editChoreId').value;
+
+            if (!name || !scheduledDate) {
+                showToast('Name and scheduled date are required', 'error');
+                return;
+            }
+
+            // Disable the save button and show loading state
+            const saveBtn = document.getElementById('saveChoreBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="bi bi-hourglass"></i> Saving...';
+
+            try {
+                const response = await fetch(`/api/chores/${choreId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        [csrfHeader]: csrfToken
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        description: description,
+                        scheduledDate: scheduledDate
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Failed to update chore');
+                }
+
+                // Update the chore in the UI
+                const row = document.querySelector(`tr[data-chore-id="${choreId}"]`);
+                row.cells[0].querySelector('.fw-semibold').textContent = name;
+                if (row.cells[1]) row.cells[1].textContent = description || 'No description';
+                row.cells[2].querySelector('.fw-semibold').textContent = scheduledDate;
+
+                // Hide the modal
+                editModal.hide();
+
+                // Show success toast
+                showToast('Chore updated successfully', 'success');
+
+            } catch (error) {
+                console.error('Error updating chore:', error);
+                showToast(error.message, 'error');
+            } finally {
+                // Re-enable the save button
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = 'Save';
+            }
+        };
+    }
+
+    function showToast(message, type = 'info', duration = 4000) {
+        const toastContainer = document.getElementById('toastContainer');
+        const toastId = 'toast-' + Date.now();
+
+        const toastConfig = {
+            success: {
+                bgClass: 'bg-success',
+                icon: 'bi-check-circle-fill',
+                title: 'Success'
+            },
+            error: {
+                bgClass: 'bg-danger',
+                icon: 'bi-x-circle-fill',
+                title: 'Error'
+            },
+            warning: {
+                bgClass: 'bg-warning',
+                icon: 'bi-exclamation-triangle-fill',
+                title: 'Warning'
+            },
+            info: {
+                bgClass: 'bg-info',
+                icon: 'bi-info-circle-fill',
+                title: 'Info'
+            }
+        };
+
+        const config = toastConfig[type] || toastConfig.info;
+
+        const toastHtml = `
+                <div class="toast align-items-center text-white ${config.bgClass} border-0 shadow"
+                     role="alert"
+                     aria-live="assertive"
+                     aria-atomic="true"
+                     id="${toastId}">
+                    <div class="d-flex">
+                        <div class="toast-body d-flex align-items-center">
+                            <i class="bi ${config.icon} me-2"></i>
+                            ${message}
+                        </div>
+                        <button type="button"
+                                class="btn-close btn-close-white me-2 m-auto"
+                                data-bs-dismiss="toast"
+                                aria-label="Close">
+                        </button>
+                    </div>
+                </div>
+            `;
+
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, {
+            autohide: true,
+            delay: duration
+        });
+
+        toast.show();
+
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            toastElement.remove();
+        });
+
+        return toast;
+    }
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const isRecurringCheckbox = document.getElementById("isRecurring");
+        const recurrenceSelect = document.getElementById("recurrenceInterval");
+
+        function toggleRecurrenceSelect() {
+            if (recurrenceSelect) {
+                recurrenceSelect.disabled = !isRecurringCheckbox.checked;
+            }
+        }
+
+        if (isRecurringCheckbox && recurrenceSelect) {
+            toggleRecurrenceSelect();
+
+            isRecurringCheckbox.addEventListener("change", toggleRecurrenceSelect);
+        }
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const choreModal = document.getElementById('choreModal');
+
+        choreModal.addEventListener('hide.bs.modal', function() {
+            const form = choreModal.querySelector('form');
+
+            const isRecurring =form.querySelector('[name="isRecurring"]').checked;
+            const recurrenceInterval = form.querySelector('[name="recurrenceInterval"]').value;
+
+            const scheduledDateInput = form.querySelector('[name="scheduledDate"]');
+            const scheduledDate = scheduledDateInput ? scheduledDateInput.value : null;
+            const choreDto = {
+                name: form.querySelector('[name="name"]').value,
+                description: form.querySelector('[name="description"]').value,
+                scheduledDate: scheduledDate,
+                assignedToId: form.querySelector('[name="assignedToId"]').value,
+                isRecurring: isRecurring,
+                createdById: form.querySelector('[name="createdById"]').value,
+                apartmentId: form.querySelector('[name="apartmentId"]').value
+            };
+
+            if(isRecurring){
+                choreDto.recurrenceInterval = recurrenceInterval;
+            }
+
+            fetch('/api/chores/draft', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector("meta[name='_csrf']").content
+                },
+                body: JSON.stringify(choreDto)
+            });
+        });
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
+</body>
+</html>

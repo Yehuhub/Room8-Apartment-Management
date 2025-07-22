@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--add expense modal-->
+<div th:fragment="addExpenseModal">
+    <div class="modal fade" id="addExpenseModal" tabindex="-1" aria-labelledby="addExpenseModalLabel" aria-hidden="true">
+        <form th:action="@{/tenant/expenses-page/add}" method="post" th:object="${expenseDto}">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="addExpenseModalLabel">Add Expense</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <input type="text" th:field="*{description}" class="form-control" id="description" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
+                        </div>
+
+                        <!-- Amount -->
+                        <div class="mb-3">
+                            <label for="totalAmount" class="form-label">Amount</label>
+                            <input type="number" th:field="*{totalAmount}" class="form-control" id="totalAmount" required min="0.1" step="0.01">
+                            <div class="text-danger" th:if="${#fields.hasErrors('totalAmount')}" th:errors="*{totalAmount}"></div>
+                        </div>
+                        <input type="hidden" name="apartmentId" th:value="${user.getResidence().getId()}" />
+                        <input type="hidden" name="payerId" th:value="${user.getId()}" />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!--Settle Debt Modal-->
+<div th:fragment="settleDebtModal">
+    <div class="modal fade" id="settleDebtModal" tabindex="-1" aria-labelledby="settleDebtModalLabel" aria-hidden="true">
+        <form th:action="@{/tenant/expenses-page/settle}" th:object="${transactionDto}" method="post">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="settleDebtModalLabel">Settle Debt</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="settleDebtDescription" class="fw-semibold">
+                            <span th:text="'You paid ' + ${toUserFullName}">You paid ...</span>
+                        </p>
+
+                        <!-- Amount -->
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount</label>
+                            <input type="number" th:field="*{amount}" step="0.01" min="0.01" id="amount" class="form-control" required />
+                            <div class="text-danger" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}"></div>
+                        </div>
+
+                        <!-- Hidden Inputs -->
+                        <input type="hidden" th:field="*{fromUserId}" id="settleFromUserId" />
+                        <input type="hidden" th:field="*{toUserId}" id="settleToUserId" />
+                        <input type="hidden" name="apartmentId" th:value="${user.getResidence().getId()}" />
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Settle</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<div th:fragment="choreModal">
+    <div class="modal fade" id="choreModal" tabindex="-1" aria-labelledby="choreModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/tenant/chores-page/add}" th:object="${choreDto}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="choreModalLabel">New Chore</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name</label>
+                            <input type="text" class="form-control" th:field="*{name}" required />
+                            <div class="text-danger" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" th:field="*{description}"></textarea>
+                            <div class="text-danger" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Scheduled Date
+                                <input type="date" class="form-control"
+                                       name="scheduledDate"
+                                       th:value="${choreDto.scheduledDate != null ? #temporals.format(choreDto.scheduledDate, 'yyyy-MM-dd') : ''}"
+                                       th:attr="min=${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
+                                       required />
+                            </label>
+                            <div class="text-danger" th:if="${#fields.hasErrors('scheduledDate')}" th:errors="*{scheduledDate}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="assignedToId" class="form-label">Assign To</label>
+                            <select class="form-select" th:field="*{assignedToId}">
+                                <option th:each="user : ${users}" th:value="${user.id}" th:text="${user.firstName  + ' ' + user.lastName.charAt(0) + '.'}"></option>
+                            </select>
+                            <div class="text-danger" th:if="${#fields.hasErrors('assignedToId')}" th:errors="*{assignedToId}"></div>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" th:field="*{isRecurring}" id="isRecurring" />
+                            <label for="isRecurring" class="form-check-label">Recurring</label>
+                            <div class="text-danger" th:if="${#fields.hasErrors('isRecurring')}" th:errors="*{isRecurring}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="recurrenceInterval" class="form-label">Recurrence Interval</label>
+                            <select class="form-select" th:field="*{recurrenceInterval}" id="recurrenceInterval" required disabled>
+                                <option value="" selected>Select Interval</option>
+                                <option value="DAILY">Daily</option>
+                                <option value="WEEKLY">Weekly</option>
+                                <option value="MONTHLY">Monthly</option>
+                            </select>
+                            <div class="text-danger" th:if="${#fields.hasErrors('recurrenceInterval')}" th:errors="*{recurrenceInterval}"></div>
+                        </div>
+
+
+                        <!-- Hidden Fields -->
+                        <input type="hidden" name="createdById" th:value="${currentUser.id}" />
+                        <input type="hidden" name="apartmentId" th:value="${currentUser.residence.id}" />
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Create</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="editChoreModal">
+    <div class="modal fade" id="editChoreModal" tabindex="-1" aria-labelledby="editChoreModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editChoreModalLabel">Edit Chore</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editChoreName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="editChoreName" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editChoreDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editChoreDescription"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editChoreScheduledDate" class="form-label">Scheduled Date</label>
+                        <input type="date" class="form-control" id="editChoreScheduledDate" min="" required />
+                    </div>
+
+                    <input type="hidden" id="editChoreId" />
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="saveChoreBtn">Save</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div th:fragment="createApartmentModal">
+    <div class="modal fade" id="createApartmentModal" tabindex="-1" aria-labelledby="createApartmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/apartment/registration}" th:object="${createApartmentDto}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="createApartmentModalLabel">Create A New Apartment</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Apartment Address:</label>
+                            <input type="text" class="form-control" id="address" name="address" placeholder="Please enter an apartment address" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('address')}" th:errors="*{address}">Invalid address</div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Create Apartment</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div th:fragment="joinApartmentModal">
+    <div class="modal fade" id="joinApartmentModal" tabindex="-1" aria-labelledby="joinApartmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/apartment/join}" th:object="${joinApartmentDto}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="joinApartmentModalLabel">Join an existing apartment</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="referenceCode" class="form-label">Apartment Reference Code:</label>
+                            <input type="text" class="form-control" id="referenceCode" name="referenceCode" placeholder="Please enter an apartment reference code">
+                            <div class="text-danger" th:if="${#fields.hasErrors('referenceCode')}" th:errors="*{referenceCode}">Invalid address</div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Join Apartment</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+</body>
+</html>

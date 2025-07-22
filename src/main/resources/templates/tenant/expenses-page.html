@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Expenses</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+<div th:replace="~{fragments/navbar :: navBar}"></div>
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-8">
+            <!-- Header Section -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h1 class="h2 text-primary fw-bold mb-0">
+                            <i class="bi bi-wallet2 me-2"></i>Expenses
+                        </h1>
+                        <div class="d-flex gap-2">
+                            <button id="toggleExpensesList" class="btn btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>
+                                <span>Show Expenses</span>
+                            </button>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+                                <i class="bi bi-plus-circle me-1"></i>
+                                <span class="d-none d-sm-inline">Add Expense</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Debts Summary Section -->
+            <div class="row mb-4" id="debtsListDiv">
+                <!-- You owe others -->
+                <div th:if="${debtsForUser != null and !debtsForUser.isEmpty()}" class="col-12 col-md-6 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-arrow-up-circle me-2"></i>You Owe
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div th:each="debt : ${debtsForUser}" class="mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold text-dark mb-1">
+                                            <span th:text="${debt.toUser.firstName} + ' ' + ${debt.toUser.lastName}">John Doe</span>
+                                        </div>
+                                        <div class="text-danger fw-bold fs-5">
+                                            ILS <span th:text="${debt.amount}">150.00</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                            type="button"
+                                            class="btn btn-outline-danger btn-sm settle-debt-btn"
+                                            th:attr="
+                                                data-from-user-id=${user.id},
+                                                data-to-user-id=${debt.toUser.id},
+                                                data-to-user-first-name=${debt.toUser.firstName},
+                                                data-to-user-last-name=${debt.toUser.lastName},
+                                                data-amount=${debt.amount},
+                                                data-max-amount=${debt.amount}
+                                            "
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#settleDebtModal"
+                                    >
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        <span class="d-none d-sm-inline">Settle Up</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Others owe you -->
+                <div th:if="${debtsToUser != null and !debtsToUser.isEmpty()}" class="col-12 col-md-6 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-arrow-down-circle me-2"></i>You're Owed
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div th:each="debt : ${debtsToUser}" class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-semibold text-dark mb-1">
+                                            <span th:text="${debt.fromUser.firstName} + ' ' + ${debt.fromUser.lastName.charAt(0)} + '.'">Jane D.</span>
+                                        </div>
+                                        <div class="text-success fw-bold fs-5">
+                                            ILS <span th:text="${debt.amount}">75.00</span>
+                                        </div>
+                                    </div>
+                                    <i class="bi bi-hourglass-split text-muted"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${(debtsForUser == null or debtsForUser.isEmpty()) and (debtsToUser == null or debtsToUser.isEmpty())}" class="col-12 text-center py-5">
+                    <i class="bi bi-emoji-smile text-success" style="font-size: 3rem;"></i>
+                    <h5 class="text-success mt-3 fw-bold">All settled up!</h5>
+                    <p class="text-muted">You don't owe anyone and no one owes you.</p>
+                </div>
+
+            </div>
+
+            <div id="expensesListDiv" class="d-none">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-list-ul me-2"></i>Expense History
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div th:if="${groupedExpenses != null and !groupedExpenses.isEmpty()}">
+                                    <div th:each="entry : ${groupedExpenses}" class="mb-4">
+                                        <h6 class="text-primary fw-bold mb-3 pb-2 border-bottom">
+                                            <i class="bi bi-calendar3 me-1"></i>
+                                            <span th:text="${#temporals.format(entry.key.atDay(1), 'MMMM yyyy')}">June 2025</span>
+                                        </h6>
+
+                                        <div th:each="expense : ${entry.value}" class="row mb-3 p-3 bg-light rounded">
+                                            <!-- Mobile Layout -->
+                                            <div class="d-block d-md-none">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <div class="fw-bold text-primary">
+                                                        <span th:text="${#temporals.format(expense.timestamp, 'MMM d')}">Jun 11</span>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <!-- Updated badge logic to handle not involved -->
+                                                        <div th:if="${userShares[expense.id] == null or userShares[expense.id] == 0}"
+                                                             class="badge rounded-pill bg-secondary">
+                                                            Not involved
+                                                        </div>
+                                                        <div th:if="${userShares[expense.id] != null and userShares[expense.id] != 0}"
+                                                             th:class="${'badge rounded-pill ' + (expense.payer.id == user.id ? 'bg-success' : 'bg-danger')}"
+                                                             th:text="${expense.payer.id == user.id ? 'You lent' : 'You borrowed'}">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <div class="fw-semibold" th:text="${expense.description}">Groceries</div>
+                                                    <div class="text-muted small"
+                                                         th:text="${expense.payer.firstName + ' ' + expense.payer.lastName.charAt(0) + '. paid ILS ' + expense.totalAmount}">
+                                                    </div>
+                                                </div>
+                                                <div class="text-end">
+                                                    <!-- Updated amount display logic -->
+                                                    <div th:if="${userShares[expense.id] == null or userShares[expense.id] == 0}"
+                                                         class="fw-bold fs-5 text-muted">
+                                                        ILS 0
+                                                    </div>
+                                                    <div th:if="${userShares[expense.id] != null and userShares[expense.id] != 0}"
+                                                         class="fw-bold fs-5"
+                                                         th:class="(expense.payer.id == user.id ? 'text-success' : 'text-danger')"
+                                                         th:text="${expense.payer.id == user.id ? 'ILS ' + (expense.totalAmount - userShares[expense.id]) : 'ILS ' + userShares[expense.id]}">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Desktop Layout -->
+                                            <div class="d-none d-md-block">
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-2">
+                                                        <div class="fw-bold text-primary">
+                                                            <span th:text="${#temporals.format(expense.timestamp, 'MMM')}">Jun</span>
+                                                            <br>
+                                                            <span class="fs-4" th:text="${#temporals.format(expense.timestamp, 'd')}">11</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <div class="fw-semibold mb-1" th:text="${expense.description}">Groceries</div>
+                                                        <div class="text-muted small"
+                                                             th:text="${expense.payer.firstName + ' ' + expense.payer.lastName.charAt(0) + '. paid ILS ' + expense.totalAmount}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <!-- Updated badge logic for desktop -->
+                                                        <div th:if="${userShares[expense.id] == null or userShares[expense.id] == 0}"
+                                                             class="badge rounded-pill bg-secondary">
+                                                            Not involved
+                                                        </div>
+                                                        <div th:if="${userShares[expense.id] != null and userShares[expense.id] != 0}"
+                                                             th:class="${'badge rounded-pill ' + (expense.payer.id == user.id ? 'bg-success' : 'bg-danger')}"
+                                                             th:text="${expense.payer.id.equals(user.id) ? 'You lent' : 'You borrowed'}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2 text-end">
+                                                        <!-- Updated amount display for desktop -->
+                                                        <div th:if="${userShares[expense.id] == null or userShares[expense.id] == 0}"
+                                                             class="fw-bold fs-5 text-muted">
+                                                            ILS 0
+                                                        </div>
+                                                        <div th:if="${userShares[expense.id] != null and userShares[expense.id] != 0}"
+                                                             class="fw-bold fs-5"
+                                                             th:class="${expense.payer.id == user.id ? 'text-success' : 'text-danger'}"
+                                                             th:text="${expense.payer.id == user.id ? 'ILS ' + (expense.totalAmount - userShares[expense.id]) : 'ILS ' + userShares[expense.id]}">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div th:if="${groupedExpenses == null or groupedExpenses.isEmpty()}" class="text-center py-5">
+                                    <i class="bi bi-receipt text-muted" style="font-size: 3rem;"></i>
+                                    <h5 class="text-muted mt-3">No expenses yet</h5>
+                                    <p class="text-muted">Start by adding your first expense above!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/modal-fragments :: addExpenseModal}"></div>
+<div th:replace="~{fragments/modal-fragments :: settleDebtModal}"></div>
+
+<script th:if="${showAddExpenseModal}">
+    document.addEventListener("DOMContentLoaded", function () {
+        const addExpenseModal = new bootstrap.Modal(document.getElementById('addExpenseModal'));
+        addExpenseModal.show();
+    });
+</script>
+
+<script th:if="${showSettleDebtModal}">
+    document.addEventListener("DOMContentLoaded", function () {
+        const settleDebtModal = new bootstrap.Modal(document.getElementById('settleDebtModal'));
+        settleDebtModal.show();
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const buttons = document.querySelectorAll('.settle-debt-btn');
+        buttons.forEach(button => {
+            button.addEventListener('click', function () {
+                const fromUserId = this.getAttribute('data-from-user-id');
+                const toUserId = this.getAttribute('data-to-user-id');
+                const toFirstName = this.getAttribute('data-to-user-first-name');
+                const toLastName = this.getAttribute('data-to-user-last-name');
+                const amount = this.getAttribute('data-amount');
+                const maxAmount = parseFloat(this.getAttribute('data-max-amount'));
+
+                document.getElementById('settleFromUserId').value = fromUserId;
+                document.getElementById('settleToUserId').value = toUserId;
+
+                const amountInput = document.getElementById('amount');
+                amountInput.value = amount;
+                amountInput.setAttribute('max', maxAmount.toFixed(2))
+                document.getElementById('settleDebtDescription').textContent =
+                    `You paid ${toFirstName} ${toLastName}.`;
+            });
+        });
+    });
+</script>
+
+<script>
+    document.getElementById('toggleExpensesList').addEventListener('click', function () {
+        const expensesListDiv = document.getElementById('expensesListDiv');
+        const icon = this.querySelector('i');
+        const text = this.querySelector('span');
+
+        if (expensesListDiv.classList.contains('d-none')) {
+            expensesListDiv.classList.remove('d-none');
+            icon.className = 'bi bi-eye-slash me-1';
+            text.textContent = 'Hide Expenses';
+        } else {
+            expensesListDiv.classList.add('d-none');
+            icon.className = 'bi bi-eye me-1';
+            text.textContent = 'Show Expenses';
+        }
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
+</body>
+</html>
