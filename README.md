@@ -3,9 +3,7 @@
 Web application designed to help residents of shared apartments manage chores and expenses. It provides both RESTful APIs and web interfaces for owners and tenants.  
 The entire application is built using Spring Boot and Thymeleaf
 
-## Student
-- **Name:** Yehu Raccah
-- **login:** yehura@edu.jmc.ac.il
+
 
 ### Features
 
@@ -35,3 +33,7 @@ For users demonstrated in the demo, use the following emails(all passowrds are "
 
 ##### owner for both apartments:
  - tomer@ganz.com
+
+# Contact:
+- **Name:** Yehu Raccah
+- **login:** yhrcch@gmail.com
