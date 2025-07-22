@@ -1,9 +1,7 @@
-# Apartment Management System
+# Room8's Apartment Management System
 
 Web application designed to help residents of shared apartments manage chores and expenses. It provides both RESTful APIs and web interfaces for owners and tenants.  
-
-[Watch Demo Video](https://drive.google.com/file/d/1o0Yx9tFhrQI_umSDpZ3AIc5EE9KKrCLW/view?usp=sharing)
-
+The entire application is built using Spring Boot and Thymeleaf
 
 ## Student
 - **Name:** Yehu Raccah
