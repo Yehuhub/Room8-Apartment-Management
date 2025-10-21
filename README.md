@@ -36,4 +36,4 @@ For users demonstrated in the demo, use the following emails(all passowrds are "
 
 # Contact:
 - **Name:** Yehu Raccah
-- **login:** yhrcch@gmail.com
+- **Email:** yhrcch@gmail.com
